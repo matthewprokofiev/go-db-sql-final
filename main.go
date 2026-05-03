@@ -15,7 +15,7 @@ const (
 )
 
 type Parcel struct {
-	Number    int64
+	Number    int
 	Client    int
 	Status    string
 	Address   string
@@ -43,7 +43,7 @@ func (s ParcelService) Register(client int, address string) (Parcel, error) {
 		return parcel, err
 	}
 
-	parcel.Number = id
+	parcel.Number = int(id)
 
 	fmt.Printf("Новая посылка № %d на адрес %s от клиента с идентификатором %d зарегистрирована %s\n",
 		parcel.Number, parcel.Address, parcel.Client, parcel.CreatedAt)
@@ -67,8 +67,8 @@ func (s ParcelService) PrintClientParcels(client int) error {
 	return nil
 }
 
-func (s ParcelService) NextStatus(number int64) error {
-	parcel, err := s.store.Get(number)
+func (s ParcelService) NextStatus(number int) error {
+	parcel, err := s.store.Get(int64(number))
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (s ParcelService) NextStatus(number int64) error {
 
 	fmt.Printf("У посылки № %d новый статус: %s\n", number, nextStatus)
 
-	return s.store.SetStatus(number, nextStatus)
+	return s.store.SetStatus(int64(number), nextStatus)
 }
 
 func (s ParcelService) ChangeAddress(number int64, address string) error {
@@ -100,6 +100,7 @@ func main() {
 	// настройте подключение к БД
 	db, err := sql.Open("sqlite", "tracker.db")
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	defer db.Close()
@@ -118,7 +119,7 @@ func main() {
 
 	// изменение адреса
 	newAddress := "Саратов, д. Верхние Зори, ул. Козлова, д. 25"
-	err = service.ChangeAddress(p.Number, newAddress)
+	err = service.ChangeAddress(int64(p.Number), newAddress)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -139,7 +140,7 @@ func main() {
 	}
 
 	// попытка удаления отправленной посылки
-	err = service.Delete(p.Number)
+	err = service.Delete(int64(p.Number))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -161,7 +162,7 @@ func main() {
 	}
 
 	// удаление новой посылки
-	err = service.Delete(p.Number)
+	err = service.Delete(int64(p.Number))
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -76,7 +76,6 @@ func TestSetAddress(t *testing.T) {
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	number, err := store.Add(parcel)
 	assert.NoError(t, err)
-	assert.NotEqual(t, -1, number)
 
 	// set address
 	// обновите адрес, убедитесь в отсутствии ошибки
@@ -104,7 +103,6 @@ func TestSetStatus(t *testing.T) {
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	number, err := store.Add(parcel)
 	assert.NoError(t, err)
-	assert.NotEqual(t, -1, number)
 
 	// set status
 	// обновите статус, убедитесь в отсутствии ошибки
@@ -144,7 +142,7 @@ func TestGetByClient(t *testing.T) {
 		getTestParcel(),
 		getTestParcel(),
 	}
-	parcelMap := map[int64]Parcel{}
+	parcelMap := map[int]Parcel{}
 
 	// задаём всем посылкам один и тот же идентификатор клиента
 	client := randRange.Intn(10_000_000)
@@ -156,13 +154,12 @@ func TestGetByClient(t *testing.T) {
 	for i := 0; i < len(parcels); i++ {
 		number, err := store.Add(parcels[i])
 		assert.NoError(t, err)
-		assert.NotEqual(t, -1, number)
 
 		// обновляем идентификатор добавленной у посылки
-		parcels[i].Number = number
+		parcels[i].Number = int(number)
 
 		// сохраняем добавленную посылку в структуру map, чтобы её можно было легко достать по идентификатору посылки
-		parcelMap[number] = parcels[i]
+		parcelMap[int(number)] = parcels[i]
 	}
 
 	// get by client
