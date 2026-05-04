@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"math/rand"
 	"testing"
 	"time"
@@ -48,6 +47,7 @@ func TestAddGetDelete(t *testing.T) {
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
 	gotParcel, err := store.Get(number)
+	require.NoError(t, err)
 	assert.Equal(t, parcel.Client, gotParcel.Client)
 	assert.Equal(t, parcel.Status, gotParcel.Status)
 	assert.Equal(t, parcel.Address, gotParcel.Address)
@@ -57,10 +57,10 @@ func TestAddGetDelete(t *testing.T) {
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что посылку больше нельзя получить из БД
 	err = store.Delete(number)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = store.Get(number)
-	assert.ErrorIs(t, err, sql.ErrNoRows)
+	require.ErrorIs(t, err, sql.ErrNoRows)
 }
 
 // TestSetAddress проверяет обновление адреса
@@ -75,18 +75,18 @@ func TestSetAddress(t *testing.T) {
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	number, err := store.Add(parcel)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// set address
 	// обновите адрес, убедитесь в отсутствии ошибки
 	newAddress := "new test address"
 	err = store.SetAddress(number, newAddress)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// check
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	gotParcel, err := store.Get(number)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, newAddress, gotParcel.Address)
 }
 
@@ -102,32 +102,18 @@ func TestSetStatus(t *testing.T) {
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	number, err := store.Add(parcel)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// set status
 	// обновите статус, убедитесь в отсутствии ошибки
-	gotOldParcel, err := store.Get(number)
-	assert.NoError(t, err)
-
-	var newStatus string
-	switch gotOldParcel.Status {
-	case ParcelStatusRegistered:
-		newStatus = ParcelStatusSent
-	case ParcelStatusSent:
-		newStatus = ParcelStatusDelivered
-	case ParcelStatusDelivered:
-		newStatus = ParcelStatusSent
-	default:
-		require.Error(t, errors.New("unknown status"))
-	}
-
-	err = store.SetStatus(number, newStatus)
-	assert.NoError(t, err)
+	err = store.SetStatus(number, ParcelStatusSent)
+	require.NoError(t, err)
 
 	// check
 	// получите добавленную посылку и убедитесь, что статус обновился
 	gotNewParcel, err := store.Get(number)
-	assert.Equal(t, newStatus, gotNewParcel.Status)
+	require.NoError(t, err)
+	assert.Equal(t, ParcelStatusSent, gotNewParcel.Status)
 }
 
 // TestGetByClient проверяет получение посылок по идентификатору клиента
@@ -153,7 +139,7 @@ func TestGetByClient(t *testing.T) {
 	// add
 	for i := 0; i < len(parcels); i++ {
 		number, err := store.Add(parcels[i])
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// обновляем идентификатор добавленной у посылки
 		parcels[i].Number = int(number)
@@ -164,8 +150,8 @@ func TestGetByClient(t *testing.T) {
 
 	// get by client
 	storedParcels, err := store.GetByClient(client)
-	assert.NoError(t, err)
-	require.Equal(t, len(parcels), len(storedParcels))
+	require.NoError(t, err)
+	assert.Equal(t, len(parcels), len(storedParcels))
 	// убедитесь в отсутствии ошибки
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
 
@@ -174,8 +160,6 @@ func TestGetByClient(t *testing.T) {
 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
 		// убедитесь, что все посылки из storedParcels есть в parcelMap
 		// убедитесь, что значения полей полученных посылок заполнены верно
-		if _, ok := parcelMap[parcel.Number]; !ok {
-			t.Errorf("parcel number %d is not found", parcel.Number)
-		}
+		require.Contains(t, parcelMap, parcel.Number)
 	}
 }

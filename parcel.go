@@ -17,7 +17,7 @@ func NewParcelStore(db *sql.DB) ParcelStore {
 	return ParcelStore{db: db}
 }
 
-func (s ParcelStore) Add(p Parcel) (int64, error) {
+func (s ParcelStore) Add(p Parcel) (int, error) {
 	// реализуйте добавление строки в таблицу parcel, используйте данные из переменной p
 	res, err := s.db.Exec(
 		"INSERT INTO parcel (client, status, address, created_at) VALUES (:client, :status, :address, :created_at)",
@@ -32,14 +32,14 @@ func (s ParcelStore) Add(p Parcel) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return lastInsertId, nil
+	return int(lastInsertId), nil
 }
 
-func (s ParcelStore) Get(number int64) (Parcel, error) {
+func (s ParcelStore) Get(number int) (Parcel, error) {
 	// реализуйте чтение строки по заданному number
 	// здесь из таблицы должна вернуться только одна строка
 	parselRow := s.db.QueryRow(
-		"SELECT number, client, status, address, created_at FROM parcel where number = :number",
+		"SELECT number, client, status, address, created_at FROM parcel WHERE number = :number",
 		sql.Named("number", number),
 	)
 
@@ -57,7 +57,7 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 	// реализуйте чтение строк из таблицы parcel по заданному client
 	// здесь из таблицы может вернуться несколько строк
 	parcelRows, err := s.db.Query(
-		"SELECT number, client, status, address, created_at FROM parcel where client = :client",
+		"SELECT number, client, status, address, created_at FROM parcel WHERE client = :client",
 		sql.Named("client", client),
 	)
 	if err != nil {
@@ -68,8 +68,11 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 	// заполните срез Parcel данными из таблицы
 	var res []Parcel
 	for parcelRows.Next() {
-		var p Parcel
+		if err = parcelRows.Err(); err != nil {
+			return nil, err
+		}
 
+		var p Parcel
 		err := parcelRows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 		if err != nil {
 			return nil, err
@@ -81,7 +84,7 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 	return res, nil
 }
 
-func (s ParcelStore) SetStatus(number int64, status string) error {
+func (s ParcelStore) SetStatus(number int, status string) error {
 	// реализуйте обновление статуса в таблице parcel
 	_, err := s.db.Exec(
 		"UPDATE parcel SET status = :status WHERE number = :number",
@@ -94,7 +97,7 @@ func (s ParcelStore) SetStatus(number int64, status string) error {
 	return nil
 }
 
-func (s ParcelStore) SetAddress(number int64, address string) error {
+func (s ParcelStore) SetAddress(number int, address string) error {
 	// реализуйте обновление адреса в таблице parcel
 	// менять адрес можно только если значение статуса registered
 	res, err := s.db.Exec(
@@ -116,7 +119,7 @@ func (s ParcelStore) SetAddress(number int64, address string) error {
 	return nil
 }
 
-func (s ParcelStore) Delete(number int64) error {
+func (s ParcelStore) Delete(number int) error {
 	// реализуйте удаление строки из таблицы parcel
 	// удалять строку можно только если значение статуса registered
 	_, err := s.db.Exec("DELETE FROM parcel WHERE number = :number AND status = 'registered'", sql.Named("number", number))
