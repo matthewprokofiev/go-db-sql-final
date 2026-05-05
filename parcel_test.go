@@ -41,13 +41,15 @@ func TestAddGetDelete(t *testing.T) {
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	number, err := store.Add(parcel)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotZero(t, number)
 
 	// get
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
 	gotParcel, err := store.Get(number)
 	require.NoError(t, err)
+	require.NotZero(t, gotParcel.Number)
 	assert.Equal(t, parcel.Client, gotParcel.Client)
 	assert.Equal(t, parcel.Status, gotParcel.Status)
 	assert.Equal(t, parcel.Address, gotParcel.Address)
@@ -140,12 +142,13 @@ func TestGetByClient(t *testing.T) {
 	for i := 0; i < len(parcels); i++ {
 		number, err := store.Add(parcels[i])
 		require.NoError(t, err)
+		require.NotZero(t, number)
 
 		// обновляем идентификатор добавленной у посылки
-		parcels[i].Number = int(number)
+		parcels[i].Number = number
 
 		// сохраняем добавленную посылку в структуру map, чтобы её можно было легко достать по идентификатору посылки
-		parcelMap[int(number)] = parcels[i]
+		parcelMap[number] = parcels[i]
 	}
 
 	// get by client
@@ -160,6 +163,10 @@ func TestGetByClient(t *testing.T) {
 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
 		// убедитесь, что все посылки из storedParcels есть в parcelMap
 		// убедитесь, что значения полей полученных посылок заполнены верно
-		require.Contains(t, parcelMap, parcel.Number)
+		assert.Contains(t, parcelMap, parcel.Number)
+		assert.Equal(t, parcelMap[parcel.Number].Address, parcel.Address)
+		assert.Equal(t, parcelMap[parcel.Number].Client, parcel.Client)
+		assert.Equal(t, parcelMap[parcel.Number].CreatedAt, parcel.CreatedAt)
+		assert.Equal(t, parcelMap[parcel.Number].Status, parcel.Status)
 	}
 }
